@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: audiobook-manager-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - watch-data:/app/watch
+      - output-data:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ALLOWED_ORIGINS=*
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: audiobook-manager-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  watch-data:
+  output-data:

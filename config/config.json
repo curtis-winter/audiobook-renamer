@@ -1,0 +1,6 @@
+{
+  "watch_folder": "/mnt/watch",
+  "output_folder": "/mnt/output",
+  "filename_template": "%albumartist% - %album% (%year%)",
+  "folder_template": "%albumartist%/%series%/%year% - %album%"
+}
