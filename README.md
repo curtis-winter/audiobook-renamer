@@ -33,12 +33,25 @@ A web-based audiobook management tool similar to Filebot for organizing and tagg
 
 The app is designed for efficient workflow:
 
-1. **Select a file** from the file list on the left
+1. **Select a file** from the file list on the left - sidebar auto-collapses when file is selected
 2. **Search for metadata** using the search box (searches Audible, Google Books, Open Library)
 3. **Select a result** - metadata auto-fills AND preview auto-generates simultaneously
 4. **Edit as needed** - any field changes trigger instant preview update
 5. **Apply Changes** - green button at top of metadata section
 6. **Template editing** - click the ⚙ cog icon next to "File Name" or "File Location" to edit templates
+
+### Settings
+
+Access app settings via the ⚙ icon in the top-right header:
+- **Watch Folder**: The folder to monitor for audiobook files
+- **Output Folder**: Where renamed/metadata-updated files will be placed
+- Click Browse to select folders via native dialog
+
+### Collapsible Sidebar
+
+The Files section in the sidebar can be collapsed/expanded:
+- Click ◀ to collapse, ▶ to expand
+- Sidebar automatically collapses when a file is selected to give more room to the metadata editor
 
 ### Template Editing
 

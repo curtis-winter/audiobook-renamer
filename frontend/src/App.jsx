@@ -24,8 +24,12 @@ const calculateMatch = (fileMetadata, searchResult) => {
   ]
 
   fields.forEach(({ key, weight }) => {
-    const fileVal = (fileMetadata[key] || '').toLowerCase().trim()
-    const resultVal = (searchResult[key] || '').toLowerCase().trim()
+    let fileVal = fileMetadata[key]
+    let resultVal = searchResult[key]
+    if (fileVal && typeof fileVal === 'object') fileVal = JSON.stringify(fileVal)
+    if (resultVal && typeof resultVal === 'object') resultVal = JSON.stringify(resultVal)
+    fileVal = String(fileVal || '').toLowerCase().trim()
+    resultVal = String(resultVal || '').toLowerCase().trim()
 
     if (fileVal && resultVal) {
       total += weight
@@ -67,21 +71,24 @@ const processTemplateFunctions = (template, metadata) => {
   // uppercase: {{uppercase:%title%}}
   result = result.replace(/\{\{uppercase:([^}]+)\}\}/g, (match, field) => {
     const fieldName = field.replace(/%/g, '')
-    const fieldValue = metadata[fieldName] || ''
-    return fieldValue.toString().toUpperCase()
+    let fieldValue = metadata[fieldName]
+    if (fieldValue && typeof fieldValue === 'object') fieldValue = JSON.stringify(fieldValue)
+    return String(fieldValue || '').toUpperCase()
   })
 
   // lowercase: {{lowercase:%title%}}
   result = result.replace(/\{\{lowercase:([^}]+)\}\}/g, (match, field) => {
     const fieldName = field.replace(/%/g, '')
-    const fieldValue = metadata[fieldName] || ''
-    return fieldValue.toString().toLowerCase()
+    let fieldValue = metadata[fieldName]
+    if (fieldValue && typeof fieldValue === 'object') fieldValue = JSON.stringify(fieldValue)
+    return String(fieldValue || '').toLowerCase()
   })
 
   // default: {{default:%title%:Unknown}}
   result = result.replace(/\{\{default:([^:]+):([^}]+)\}\}/g, (match, field, defaultVal) => {
     const fieldName = field.replace(/%/g, '')
-    const fieldValue = metadata[fieldName] || ''
+    let fieldValue = metadata[fieldName]
+    if (fieldValue && typeof fieldValue === 'object') fieldValue = JSON.stringify(fieldValue)
     return fieldValue || defaultVal
   })
 
@@ -146,6 +153,7 @@ function App() {
   })
   const [files, setFiles] = useState([])
   const [selectedFile, setSelectedFile] = useState(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [metadata, setMetadata] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -158,11 +166,18 @@ function App() {
   const [showEmptyFolderModal, setShowEmptyFolderModal] = useState(false)
   const [hasPreviewed, setHasPreviewed] = useState(false)
   const [templateHelperOpen, setTemplateHelperOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [editingTemplateType, setEditingTemplateType] = useState('filename')
   const [helperSampleBook, setHelperSampleBook] = useState('series')
   const [helperTemplate, setHelperTemplate] = useState('')
   const [cursorPosition, setCursorPosition] = useState(0)
   const textareaRef = useRef(null)
+
+  const safeValue = (val) => {
+    if (val === null || val === undefined) return '-';
+    if (typeof val === 'object') return JSON.stringify(val);
+    return String(val);
+  }
 
   const getFieldDiffClass = (field, value) => {
     if (!preview?.original_metadata) return '';
@@ -207,6 +222,7 @@ function App() {
 
   const handleFileSelect = async (file) => {
     setSelectedFile(file)
+    setSidebarCollapsed(true)
     setSearchResults([])
     setPreview(null)
     setHasPreviewed(false)
@@ -311,7 +327,7 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
         movement_name: getValueFromResult(fieldMappings.movement_name),
         show_movement: getValueFromResult(fieldMappings.show_movement),
         year: getValueFromResult(fieldMappings.year),
-        release_date: getValueFromResult(fieldMappings.release_date),
+        release_date: String(getValueFromResult(fieldMappings.release_date) || ''),
         publisher: getValueFromResult(fieldMappings.publisher),
         copyright: getValueFromResult(fieldMappings.copyright),
         comment: getValueFromResult(fieldMappings.comment),
@@ -567,51 +583,34 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
     <div className="app">
       <header>
         <h1>Audiobook Manager</h1>
+        <button className="settings-btn" onClick={() => setSettingsOpen(true)} title="Settings">⚙</button>
       </header>
 
       <div className="container">
-      <div className="sidebar">
-        <div className="config-section">
-          <h2>Configuration</h2>
-          <div className="form-group">
-            <label>Watch Folder:</label>
-            <div className="folder-input">
-              <input
-                type="text"
-                value={config.watchFolder}
-                onChange={(e) => setConfig({...config, watchFolder: e.target.value})}
-              />
-              <button onClick={() => handleFolderSelect('watchFolder')}>Browse...</button>
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Output Folder:</label>
-            <div className="folder-input">
-              <input
-                type="text"
-                value={config.outputFolder}
-                onChange={(e) => setConfig({...config, outputFolder: e.target.value})}
-              />
-              <button onClick={() => handleFolderSelect('outputFolder')}>Browse...</button>
-            </div>
-          </div>
-          <button onClick={handleSaveConfig} className="save-config">Save Config</button>
-        </div>
-
+      <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div className="files-section">
-            <h2>Files</h2>
-            <button onClick={loadFiles}>Refresh</button>
-            <div className="file-list">
-              {files.map(file => (
-                <div
-                  key={file.id}
-                  className={`file-item ${selectedFile?.id === file.id ? 'selected' : ''}`}
-                  onClick={() => handleFileSelect(file)}
-                >
-                  {file.filename}
-                </div>
-              ))}
+            <div className="files-header">
+              <h2>Files</h2>
+              <button className="collapse-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+                {sidebarCollapsed ? '▶' : '◀'}
+              </button>
             </div>
+            {!sidebarCollapsed && (
+              <>
+                <button onClick={loadFiles}>Refresh</button>
+                <div className="file-list">
+                  {files.map(file => (
+                    <div
+                      key={file.id}
+                      className={`file-item ${selectedFile?.id === file.id ? 'selected' : ''}`}
+                      onClick={() => handleFileSelect(file)}
+                    >
+                      {file.filename}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -642,112 +641,112 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
                     </tr>
                     <tr>
                       <td>Title (ALBUM)</td>
-                      <td>{preview?.original_metadata?.title || metadata.title || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.title) || metadata.title || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('title', metadata.title) ? 'changed-input' : ''} value={metadata.title || ''} onChange={(e) => handleMetadataChange('title', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Subtitle</td>
-                      <td>{preview?.original_metadata?.subtitle || metadata.subtitle || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.subtitle) || metadata.subtitle || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('subtitle', metadata.subtitle) ? 'changed-input' : ''} value={metadata.subtitle || ''} onChange={(e) => handleMetadataChange('subtitle', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Author (ARTIST)</td>
-                      <td>{preview?.original_metadata?.artist || metadata.artist || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.artist) || metadata.artist || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('artist', metadata.artist) ? 'changed-input' : ''} value={metadata.artist || ''} onChange={(e) => handleMetadataChange('artist', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Album Artist (ALBUMARTIST)</td>
-                      <td>{preview?.original_metadata?.album_artist || metadata.album_artist || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.album_artist) || metadata.album_artist || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('album_artist', metadata.album_artist) ? 'changed-input' : ''} value={metadata.album_artist || ''} onChange={(e) => handleMetadataChange('album_artist', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Narrator (COMPOSER)</td>
-                      <td>{preview?.original_metadata?.composer || metadata.composer || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.composer) || metadata.composer || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('composer', metadata.composer) ? 'changed-input' : ''} value={metadata.composer || ''} onChange={(e) => handleMetadataChange('composer', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Year (YEAR)</td>
-                      <td>{preview?.original_metadata?.year || metadata.year || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.year) || metadata.year || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('year', metadata.year) ? 'changed-input' : ''} value={metadata.year || ''} onChange={(e) => handleMetadataChange('year', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Series (SERIES)</td>
-                      <td>{preview?.original_metadata?.series || metadata.series || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.series) || metadata.series || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('series', metadata.series) ? 'changed-input' : ''} value={metadata.series || ''} onChange={(e) => handleMetadataChange('series', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Series Part (SERIES-PART)</td>
-                      <td>{preview?.original_metadata?.series_part || metadata.series_part || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.series_part) || metadata.series_part || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('series_part', metadata.series_part) ? 'changed-input' : ''} value={metadata.series_part || ''} onChange={(e) => handleMetadataChange('series_part', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Content Group</td>
-                      <td>{preview?.original_metadata?.content_group || metadata.content_group || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.content_group) || metadata.content_group || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('content_group', metadata.content_group) ? 'changed-input' : ''} value={metadata.content_group || ''} onChange={(e) => handleMetadataChange('content_group', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Publisher (PUBLISHER)</td>
-                      <td>{preview?.original_metadata?.publisher || metadata.publisher || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.publisher) || metadata.publisher || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('publisher', metadata.publisher) ? 'changed-input' : ''} value={metadata.publisher || ''} onChange={(e) => handleMetadataChange('publisher', e.target.value)} />
                       </td>
                     </tr>
 <tr>
                       <td>Copyright (COPYRIGHT)</td>
-                      <td>{preview?.original_metadata?.copyright || metadata.copyright || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.copyright) || metadata.copyright || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('copyright', metadata.copyright) ? 'changed-input' : ''} value={metadata.copyright || ''} onChange={(e) => handleMetadataChange('copyright', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Format (FORMAT)</td>
-                      <td>{preview?.original_metadata?.format || metadata.format || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.format) || metadata.format || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('format', metadata.format) ? 'changed-input' : ''} value={metadata.format || ''} onChange={(e) => handleMetadataChange('format', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Language (LANGUAGE)</td>
-                      <td>{preview?.original_metadata?.language || metadata.language || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.language) || metadata.language || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('language', metadata.language) ? 'changed-input' : ''} value={metadata.language || ''} onChange={(e) => handleMetadataChange('language', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>ASIN</td>
-                      <td>{preview?.original_metadata?.asin || metadata.asin || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.asin) || metadata.asin || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('asin', metadata.asin) ? 'changed-input' : ''} value={metadata.asin || ''} onChange={(e) => handleMetadataChange('asin', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>ISBN</td>
-                      <td>{preview?.original_metadata?.isbn || metadata.isbn || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.isbn) || metadata.isbn || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('isbn', metadata.isbn) ? 'changed-input' : ''} value={metadata.isbn || ''} onChange={(e) => handleMetadataChange('isbn', e.target.value)} />
                       </td>
                     </tr>
                     <tr>
                       <td>Genre (GENRE)</td>
-                      <td>{preview?.original_metadata?.genre || metadata.genre || '-'}</td>
+                      <td>{safeValue(preview?.original_metadata?.genre) || metadata.genre || '-'}</td>
                       <td>
                         <input type="text" className={getFieldDiffClass('genre', metadata.genre) ? 'changed-input' : ''} value={metadata.genre || ''} onChange={(e) => handleMetadataChange('genre', e.target.value)} />
                       </td>
@@ -896,6 +895,40 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
             <div className="modal-actions">
               <button onClick={() => setTemplateHelperOpen(false)} className="btn-secondary">Cancel</button>
               <button onClick={() => { handleSaveHelperTemplate(); handleSaveConfig(); }} className="btn-primary">Save & Apply</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="modal-overlay" onClick={() => setSettingsOpen(false)}>
+          <div className="modal settings-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Settings</h2>
+            <div className="form-group">
+              <label>Watch Folder:</label>
+              <div className="folder-input">
+                <input
+                  type="text"
+                  value={config.watchFolder}
+                  onChange={(e) => setConfig({...config, watchFolder: e.target.value})}
+                />
+                <button onClick={() => handleFolderSelect('watchFolder')}>Browse...</button>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Output Folder:</label>
+              <div className="folder-input">
+                <input
+                  type="text"
+                  value={config.outputFolder}
+                  onChange={(e) => setConfig({...config, outputFolder: e.target.value})}
+                />
+                <button onClick={() => handleFolderSelect('outputFolder')}>Browse...</button>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setSettingsOpen(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => { handleSaveConfig(); setSettingsOpen(false); }} className="btn-primary">Save</button>
             </div>
           </div>
         </div>
