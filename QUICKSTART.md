@@ -1,93 +1,70 @@
 # Quick Start Guide
 
-## Servers are Running
-
-Both backend and frontend servers are now running:
-- **Backend API**: http://localhost:8000
-- **Frontend**: http://localhost:5173
-
-## What's Working
-
-✅ Backend API with CORS enabled
-✅ Frontend React app with Vite
-✅ Folder browser dialog for selecting watch/output folders
-✅ Google Books API integration for metadata search
-✅ ID3 tag reading/writing for MP3, M4A, M4B, FLAC
-✅ Customizable filename and folder templates
-✅ Preview changes before applying
-
-## How to Use
-
-1. Open http://localhost:5173 in your browser
-
-2. **Configure Folders**:
-   - Click "Browse..." next to Watch Folder
-   - Navigate to your audiobook folder (e.g., `/home/curtis/audiobooks/input`)
-   - Click "Select Folder"
-   - Do the same for Output Folder
-
-3. **Select a File**:
-   - Files from the watch folder will appear in the sidebar
-   - Click on a file to view/edit its metadata
-
-4. **Search for Metadata**:
-   - Enter the book title or author in the search box
-   - Click "Search"
-   - Click on a search result to apply the metadata
-
-5. **Edit Metadata**:
-   - Review and modify fields as needed
-   - All Audible tags are supported
-
-6. **Preview & Apply**:
-   - Click "Preview Changes" to see the new filename and location
-   - Click "Apply Changes" to update tags and move the file
-
-## Restarting the Servers
-
-If you need to restart:
+## Installation
 
 ```bash
-# Kill existing servers
-pkill -f "uvicorn"
-pkill -f "vite"
+# Clone and run
+docker compose up --build -d
 
-# Start backend
-cd audiobook-manager/backend
-source venv/bin/activate
-uvicorn main:app --host 0.0.0.0 --port 8000 &
-
-# Start frontend (new terminal)
-cd audiobook-manager/frontend
-npm run dev
+# Open browser
+http://localhost:8080
 ```
 
-Or use the startup script:
-```bash
-cd audiobook-manager
-./start.sh
+## Basic Workflow
+
+1. **Select File** → Choose audiobook from file list
+2. **Auto-Search** → Metadata search happens automatically
+3. **Match Check** → Look for green badges (80%+ match)
+4. **Auto-Preview** → High matches preview automatically
+5. **Apply** → Click "Apply Changes" to process
+
+## Template Quick Reference
+
+### Common Tags
+- `%title%` - Book title
+- `%artist%` - Author
+- `%year%` - Year
+- `%series%` - Series name
+- `%series_part%` - Part number
+
+### Example Templates
+
+**Filename**: `%title% (%year%)`
+- Result: `The Hobbit (1937)`
+
+**Folder**: `%artist%/%series%/%year% - %title%`
+- Result: `J.R.R. Tolkien/Middle Earth/1937 - The Hobbit/`
+
+### Advanced Functions
+
+**Conditional Series**:
 ```
+%title%%if_field:%series%: [%series% %series_part%]%
+```
+- With series: `The Hobbit [Middle Earth 1]`
+- No series: `1984`
 
-## Testing the Folder Browser
+**Zero-Pad Track**:
+```
+{{pad_left:track:2}}
+```
+- Result: `01`, `02`, `10`, etc.
 
-1. Click "Browse..." button
-2. You should see folders like: bin, boot, dev, etc, home, lib, opt, usr, var
-3. Click on "home" then "curtis" to navigate
-4. Click "Select Folder" to choose it
+## Tips
 
-## API Endpoints Available
+- **Match %**: Green = good match (auto-preview)
+- **Templates**: Click "Tags" button for helper modal
+- **Drag & Drop**: Drag tags into template fields
+- **Functions**: Click functions to insert template code
+- **Preview**: Always preview before applying
+- **Save**: Templates auto-save when you click OK
 
-- `GET /api/config` - Get current configuration
-- `GET /api/folders?path=/home` - List folders
-- `GET /api/files` - List audio files in watch folder
-- `POST /api/search?q=harry+potter` - Search Google Books
-- `POST /api/preview` - Preview changes
-- `POST /api/apply` - Apply changes
+## Common Issues
 
-## Troubleshooting
+**File not found**: Check watch folder path
+**Slow processing**: Large files take time (timeout: 300s)
+**Invalid chars**: Automatically sanitized (`:` → `-`)
 
-**CORS errors in console**: Make sure backend is running on port 8000
+## Need Help?
 
-**Folder browser shows no folders**: Check that the path is valid and you have permissions
-
-**Files not loading**: Ensure the watch folder path is correct and contains audio files (.mp3, .m4b, .m4a, .flac, etc.)
+See full README.md for detailed documentation.
