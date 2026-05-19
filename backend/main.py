@@ -103,10 +103,23 @@ async def apply_changes(update_data: MetadataUpdate):
     if not file_path:
         raise HTTPException(status_code=404, detail="File not found")
     
+    # Validate required fields
+    metadata_dict = update_data.metadata.dict(exclude_none=True)
+    title = metadata_dict.get('title', '')
+    if not title or not title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+    
+    # Check for filename conflicts
+    new_filename = file_service.generate_filename(metadata_dict, config.filename_template)
+    new_folder = file_service.generate_filepath(metadata_dict, config.folder_template, config.output_folder)
+    target_path = Path(new_folder) / new_filename
+    
+    if target_path.exists() and str(target_path) != str(file_path):
+        raise HTTPException(status_code=409, detail=f"Target file already exists: {new_filename}")
+    
     # Get the parent folder before moving
     original_folder = str(Path(file_path).parent)
     
-    metadata_dict = update_data.metadata.dict(exclude_none=True)
     success, new_path = await file_service.apply_metadata_and_move(
         file_path, 
         metadata_dict, 

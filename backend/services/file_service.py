@@ -238,7 +238,17 @@ class FileService:
         while '//' in folder_path:
             folder_path = folder_path.replace('//', '/')
         
-        return os.path.join(base_folder, folder_path)
+        # Resolve and validate path to prevent traversal
+        full_path = os.path.join(base_folder, folder_path)
+        resolved_path = os.path.normpath(full_path)
+        
+        # Ensure resolved path is within base folder
+        if not resolved_path.startswith(os.path.normpath(base_folder)):
+            logger.warning(f"Path traversal attempt detected: {folder_path}")
+            folder_path = 'Invalid'
+            full_path = os.path.join(base_folder, folder_path)
+        
+        return full_path
     
     async def apply_metadata_and_move(self, file_path: str, metadata: dict, 
                                        filename_template: str, 

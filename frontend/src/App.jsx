@@ -153,6 +153,7 @@ function App() {
   const [folderBrowserOpen, setFolderBrowserOpen] = useState(false)
   const [folderBrowserField, setFolderBrowserField] = useState('')
   const [applying, setApplying] = useState(false)
+  const [error, setError] = useState(null)
   const [emptyFolders, setEmptyFolders] = useState([])
   const [showEmptyFolderModal, setShowEmptyFolderModal] = useState(false)
   const [hasPreviewed, setHasPreviewed] = useState(false)
@@ -359,6 +360,7 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
 
   const handleApply = async () => {
     setApplying(true)
+    setError(null)
     try {
       const response = await axios.post(`${API_URL}/apply`, {
         file_id: selectedFile.id,
@@ -366,7 +368,6 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
       })
       
       if (response.data.success) {
-        // Check for empty folders
         const emptyFolders = response.data.empty_folders || []
         
         if (emptyFolders.length > 0) {
@@ -379,11 +380,10 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
           loadFiles()
         }
       } else {
-        alert('Error applying changes: ' + response.data.message)
+        setError(response.data.message || 'Error applying changes')
       }
     } catch (error) {
-      console.error('Error applying changes:', error)
-      alert('Error applying changes')
+      setError(error.response?.data?.detail || 'Error applying changes')
     } finally {
       setApplying(false)
     }
@@ -620,6 +620,7 @@ album_artist: getValueFromResult(fieldMappings.album_artist),
             <>
               <div className="metadata-editor">
                 <h2><button onClick={handleApply} className="apply" disabled={applying}>{applying ? 'Applying...' : 'Apply Changes'}</button></h2>
+                {error && <div className="error-message">{error}</div>}
                 <table className="metadata-table">
                   <thead>
                     <tr>
