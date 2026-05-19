@@ -9,24 +9,45 @@ class ApiService:
         self.open_library_url = "https://openlibrary.org/search.json"
     
     async def search_audiobook(self, query: str, search_type: str = "all") -> list:
-        """Search for audiobook metadata"""
+        """Search for audiobook metadata from multiple sources"""
         results = []
-        
-        # Try Audible first (public API, no auth needed!)
+        errors = []
+
+        # Try all sources and combine results
         audible_results = await self._search_audible(query)
-        results.extend(audible_results)
-        
-        # Fallback to Open Library if no Audible results
-        if not results:
-            openlib_results = await self._search_open_library(query)
+        if audible_results:
+            results.extend(audible_results)
+        else:
+            errors.append("audible")
+
+        # Always try Open Library as additional source
+        openlib_results = await self._search_open_library(query)
+        if openlib_results:
             results.extend(openlib_results)
-        
-        # Another fallback to Google Books
-        if not results:
-            google_results = await self._search_google_books(query)
+        else:
+            errors.append("openlibrary")
+
+        # Always try Google Books as additional source
+        google_results = await self._search_google_books(query)
+        if google_results:
             results.extend(google_results)
-        
-        return results
+        else:
+            errors.append("google")
+
+        # If all sources failed, return empty with info
+        if not results:
+            return []
+
+        # Deduplicate by title+author combination
+        seen = set()
+        unique_results = []
+        for r in results:
+            key = f"{r.get('title', '')}|{r.get('artist', '')}"
+            if key not in seen:
+                seen.add(key)
+                unique_results.append(r)
+
+        return unique_results[:30]
     
     async def _search_audible(self, query: str) -> list:
         """Search Audible API (public, no auth required)"""

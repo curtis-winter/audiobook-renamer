@@ -3,6 +3,10 @@ from mutagen.id3 import ID3, ID3NoHeaderError
 from mutagen.flac import FLAC
 from pathlib import Path
 import os
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 class MetadataService:
     AUDIO_EXTENSIONS = {'.mp3', '.m4b', '.m4a', '.flac', '.ogg', '.wav', '.wma'}
@@ -37,7 +41,7 @@ class MetadataService:
             else:
                 return self._write_generic(file_path, metadata)
         except Exception as e:
-            print(f"Error writing metadata: {e}")
+            logger.error(f"Error writing metadata: {e}")
             return False
     
     def _read_mp3(self, file_path: str) -> dict:
@@ -155,11 +159,25 @@ class MetadataService:
                 tags['TPUB'] = metadata['publisher']
             if metadata.get('copyright'):
                 tags['TCOP'] = metadata['copyright']
-            
+            if metadata.get('subtitle'):
+                tags['TIT3'] = metadata['subtitle']
+            if metadata.get('series'):
+                tags['TXXX:Series'] = metadata['series']
+            if metadata.get('series_part'):
+                tags['TXXX:Series Part'] = metadata['series_part']
+            if metadata.get('narrator'):
+                tags['TPE3'] = metadata['narrator']
+            if metadata.get('genre'):
+                tags['TCON'] = metadata['genre']
+            if metadata.get('language'):
+                tags['TLAN'] = metadata['language']
+            if metadata.get('asin'):
+                tags['TXXX:ASIN'] = metadata['asin']
+
             audio.save()
             return True
         except Exception as e:
-            print(f"Error writing MP3 metadata: {e}")
+            logger.error(f"Error writing MP3 metadata: {e}")
             return False
     
     def _write_m4a(self, file_path: str, metadata: dict) -> bool:
@@ -182,11 +200,34 @@ class MetadataService:
                 audio['\xa9cmt'] = metadata['comment']
             if metadata.get('album'):
                 audio['\xa9alb'] = metadata['album']
-            
+            if metadata.get('track'):
+                try:
+                    audio['trkn'] = (int(metadata['track']), 0)
+                except (ValueError, TypeError):
+                    pass
+            if metadata.get('series'):
+                audio['\xa9grp'] = metadata['series']
+            if metadata.get('series_part'):
+                try:
+                    audio['disk'] = (int(metadata['series_part']), 0)
+                except (ValueError, TypeError):
+                    pass
+            if metadata.get('subtitle'):
+                audio['\xa9dsc'] = metadata['subtitle']
+            if metadata.get('narrator'):
+                audio['----:com.apple.iTunes:NARRATOR'] = metadata['narrator'].encode('utf-8')
+            if metadata.get('genre'):
+                audio['\xa9gen'] = metadata['genre']
+            if metadata.get('language'):
+                audio['\xa9lng'] = metadata['language']
+            if metadata.get('asin'):
+                audio['----:com.apple.iTunes:ASIN'] = metadata['asin'].encode('utf-8')
+
             audio.save()
             return True
         except Exception as e:
-            print(f"Error writing M4A metadata: {e}")
+            import traceback
+            logger.error(f"Error writing M4A metadata: {e}\n{traceback.format_exc()}")
             return False
     
     def _write_flac(self, file_path: str, metadata: dict) -> bool:
@@ -210,11 +251,29 @@ class MetadataService:
                 audio['ALBUM'] = metadata['album']
             if metadata.get('track'):
                 audio['TRACKNUMBER'] = metadata['track']
-            
+            if metadata.get('subtitle'):
+                audio['SUBTITLE'] = metadata['subtitle']
+            if metadata.get('series'):
+                audio['SERIES'] = metadata['series']
+            if metadata.get('series_part'):
+                audio['SERIES_PART'] = metadata['series_part']
+            if metadata.get('narrator'):
+                audio['NARRATOR'] = metadata['narrator']
+            if metadata.get('genre'):
+                audio['GENRE'] = metadata['genre']
+            if metadata.get('language'):
+                audio['LANGUAGE'] = metadata['language']
+            if metadata.get('asin'):
+                audio['ASIN'] = metadata['asin']
+            if metadata.get('publisher'):
+                audio['PUBLISHER'] = metadata['publisher']
+            if metadata.get('copyright'):
+                audio['COPYRIGHT'] = metadata['copyright']
+
             audio.save()
             return True
         except Exception as e:
-            print(f"Error writing FLAC metadata: {e}")
+            logger.error(f"Error writing FLAC metadata: {e}")
             return False
     
     def _write_generic(self, file_path: str, metadata: dict) -> bool:

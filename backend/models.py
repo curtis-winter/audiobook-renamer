@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Dict, Any, List, Union
 import json
 from pathlib import Path
 import os
+
+CONFIG_PATH = os.getenv("CONFIG_PATH", "/config/config.json")
 
 class AudioMetadata(BaseModel):
     title: Optional[str] = None
@@ -43,20 +45,22 @@ class MetadataUpdate(BaseModel):
     metadata: AudioMetadata
 
 class Config(BaseModel):
-    watch_folder: str = Field(default="/mnt/watch")
-    output_folder: str = Field(default="/mnt/output")
-    filename_template: str = Field(default="%albumartist% - %album% (%year%)")
-    folder_template: str = Field(default="%albumartist%/%series%/%year% - %album%")
+    model_config = ConfigDict(populate_by_name=True)
+    
+    watch_folder: str = Field(default="/mnt/watch", alias="watchFolder")
+    output_folder: str = Field(default="/mnt/output", alias="outputFolder")
+    filename_template: str = Field(default="%albumartist% - %album% (%year%)", alias="filenameTemplate")
+    folder_template: str = Field(default="%albumartist%/%series%/%year% - %album%", alias="folderTemplate")
     
     def save(self):
-        config_path = Path("/config/config.json")
+        config_path = Path(CONFIG_PATH)
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with open(config_path, "w") as f:
             json.dump(self.dict(), f, indent=2)
-    
+
     @classmethod
     def load(cls) -> "Config":
-        config_path = Path("/config/config.json")
+        config_path = Path(CONFIG_PATH)
         if config_path.exists():
             try:
                 with open(config_path, "r") as f:

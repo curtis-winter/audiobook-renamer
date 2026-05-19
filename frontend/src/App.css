@@ -297,6 +297,14 @@ header h1 {
   height: 90px;
   object-fit: cover;
   border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.result-match {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-left: auto;
+  padding: 0.5rem;
 }
 
 .result-info {

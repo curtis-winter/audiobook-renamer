@@ -39,17 +39,25 @@ Automatically removes or replaces invalid characters for cross-platform compatib
 ### Docker (Recommended)
 
 ```bash
-# Build and run
-docker compose up --build -d
+# Production build (with nginx frontend)
+docker compose -f docker-compose.prod.yml up --build -d
 
 # View logs
-docker logs audiobook-manager
+docker logs audiobook-manager-backend
+docker logs audiobook-manager-frontend
 
 # Stop
-docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
-The application will be available at `http://localhost:8080`
+The application will be available at `http://localhost`
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CONFIG_PATH` | `/config/config.json` | Path to config file |
+| `ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | CORS origins |
 
 ### Manual Installation
 

@@ -6,7 +6,12 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import os
 import asyncio
+import logging
 from pathlib import Path
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from services import metadata_service, file_service, watch_service, api_service
 from models import AudiobookFile, MetadataUpdate, Config
@@ -27,17 +32,13 @@ app.add_middleware(
 config = Config.load()
 
 @app.get("/api/config")
-def get_config_dict():
+async def get_config():
     return {
         "watchFolder": config.watch_folder,
         "outputFolder": config.output_folder,
         "filenameTemplate": config.filename_template,
         "folderTemplate": config.folder_template,
     }
-
-@app.get("/api/config")
-async def get_config():
-    return get_config_dict()
 
 @app.post("/api/config")
 async def update_config(cfg: Config):
@@ -46,7 +47,12 @@ async def update_config(cfg: Config):
     config.filename_template = cfg.filename_template
     config.folder_template = cfg.folder_template
     config.save()
-    return get_config_dict()
+    return {
+        "watchFolder": config.watch_folder,
+        "outputFolder": config.output_folder,
+        "filenameTemplate": config.filename_template,
+        "folderTemplate": config.folder_template,
+    }
 
 @app.get("/api/files")
 async def get_files():
@@ -123,7 +129,7 @@ async def apply_changes(update_data: MetadataUpdate):
                     empty_folders.append(str(parent))
                 parent = parent.parent
         except Exception as e:
-            print(f"Error checking empty folders: {e}")
+            logger.error(f"Error checking empty folders: {e}")
     
     return {
         "success": success, 

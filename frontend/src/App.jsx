@@ -6,6 +6,45 @@ import './App.css'
 // Use relative path for API - works with nginx proxy in production
 const API_URL = '/api'
 
+const calculateMatch = (fileMetadata, searchResult) => {
+  if (!fileMetadata || !searchResult) return 0
+
+  let matches = 0
+  let total = 0
+
+  const fields = [
+    { key: 'title', weight: 3 },
+    { key: 'artist', weight: 2 },
+    { key: 'album_artist', weight: 2 },
+    { key: 'album', weight: 2 },
+    { key: 'year', weight: 1 },
+    { key: 'series', weight: 2 },
+    { key: 'series_part', weight: 1 },
+    { key: 'narrator', weight: 1 },
+  ]
+
+  fields.forEach(({ key, weight }) => {
+    const fileVal = (fileMetadata[key] || '').toLowerCase().trim()
+    const resultVal = (searchResult[key] || '').toLowerCase().trim()
+
+    if (fileVal && resultVal) {
+      total += weight
+      if (fileVal === resultVal || resultVal.includes(fileVal) || fileVal.includes(resultVal)) {
+        matches += weight
+      }
+    }
+  })
+
+  if (total === 0) return 0
+  return Math.round((matches / total) * 100)
+}
+
+const getMatchColor = (match) => {
+  if (match >= 80) return 'green'
+  if (match >= 50) return 'orange'
+  return 'red'
+}
+
 function App() {
   const [config, setConfig] = useState({
     watchFolder: './watch',
@@ -85,54 +124,97 @@ function App() {
     }
   }
 
-  const handleApplyMetadata = (result) => {
-    setMetadata(prev => ({
-      ...prev,
-      // Basic
-      title: result.title || result.album,
-      subtitle: result.subtitle,
-      album: result.album || result.title,
-      
-      // Author/Narrator
-      artist: result.artist || result.authors?.[0],
-      album_artist: result.album_artist || result.authors?.[0],
-      composer: result.composer || result.narrator,
-      narrators: result.narrators,
-      
-      // Series
-      series: result.series,
-      series_part: result.series_part,
-      content_group: result.content_group,
-      movement: result.movement,
-      movement_name: result.movement_name,
-      show_movement: result.show_movement,
-      
-      // Publication
-      year: result.year,
-      release_date: result.release_date,
-      publisher: result.publisher,
-      copyright: result.copyright,
-      
-      // Description
-      comment: result.comment || result.description,
-      description: result.description,
-      
-      // Format
-      format: result.format,
-      language: result.language,
-      asin: result.asin,
-      isbn: result.isbn,
-      genre: result.genre,
-      runtime: result.runtime,
-      
-      // Other
-      cover: result.cover,
-      rating: result.rating,
-      explicit: result.explicit,
-      album_sort: result.album_sort,
-      www_audio_file: result.www_audio_file,
-    }))
-  }
+   const handleApplyMetadata = (result) => {
+     // Define field mappings: {targetField: [sourceFields]}
+     const fieldMappings = {
+       title: ['title', 'album'],
+       subtitle: ['subtitle'],
+       album: ['album', 'title'],
+       artist: ['artist', ['authors', 0]],
+       album_artist: ['album_artist', ['authors', 0]],
+       composer: ['composer', 'narrator'],
+       narrators: ['narrators'],
+       series: ['series'],
+       series_part: ['series_part'],
+       content_group: ['content_group'],
+       movement: ['movement'],
+       movement_name: ['movement_name'],
+       show_movement: ['show_movement'],
+       year: ['year'],
+       release_date: ['release_date'],
+       publisher: ['publisher'],
+       copyright: ['copyright'],
+       comment: ['comment', 'description'],
+       description: ['description'],
+       format: ['format'],
+       language: ['language'],
+       asin: ['asin'],
+       isbn: ['isbn'],
+       genre: ['genre'],
+       runtime: ['runtime'],
+       cover: ['cover'],
+       rating: ['rating'],
+       explicit: ['explicit'],
+       album_sort: ['album_sort'],
+       www_audio_file: ['www_audio_file']
+     };
+     
+     // Helper function to get value from result using field mapping
+     const getValueFromResult = (mapping) => {
+       // Handle array mappings like ['authors', 0] for accessing nested values
+       if (Array.isArray(mapping)) {
+         const [field, indexOrAccessor] = mapping;
+         const value = result[field];
+         if (Array.isArray(value) && typeof indexOrAccessor === 'number') {
+           return value[indexOrAccessor] || null;
+         }
+         return value;
+       }
+       
+       // Handle string or array of strings (fallback chain)
+       const sources = Array.isArray(mapping) ? mapping : [mapping];
+       for (const source of sources) {
+         if (result[source] !== undefined && result[source] !== null) {
+           return result[source];
+         }
+       }
+       return null;
+     };
+     
+     setMetadata(prev => ({
+       ...prev,
+       title: getValueFromResult(fieldMappings.title),
+       subtitle: getValueFromResult(fieldMappings.subtitle),
+       album: getValueFromResult(fieldMappings.album),
+       artist: getValueFromResult(fieldMappings.artist),
+       album_artist: getValueFromResult(fieldMappings.album_artist),
+       composer: getValueFromResult(fieldMappings.composer),
+       narrators: getValueFromResult(fieldMappings.narrators),
+       series: getValueFromResult(fieldMappings.series),
+       series_part: getValueFromResult(fieldMappings.series_part),
+       content_group: getValueFromResult(fieldMappings.content_group),
+       movement: getValueFromResult(fieldMappings.movement),
+       movement_name: getValueFromResult(fieldMappings.movement_name),
+       show_movement: getValueFromResult(fieldMappings.show_movement),
+       year: getValueFromResult(fieldMappings.year),
+       release_date: getValueFromResult(fieldMappings.release_date),
+       publisher: getValueFromResult(fieldMappings.publisher),
+       copyright: getValueFromResult(fieldMappings.copyright),
+       comment: getValueFromResult(fieldMappings.comment),
+       description: getValueFromResult(fieldMappings.description),
+       format: getValueFromResult(fieldMappings.format),
+       language: getValueFromResult(fieldMappings.language),
+       asin: getValueFromResult(fieldMappings.asin),
+       isbn: getValueFromResult(fieldMappings.isbn),
+       genre: getValueFromResult(fieldMappings.genre),
+       runtime: getValueFromResult(fieldMappings.runtime),
+       cover: getValueFromResult(fieldMappings.cover),
+       rating: getValueFromResult(fieldMappings.rating),
+       explicit: getValueFromResult(fieldMappings.explicit),
+       album_sort: getValueFromResult(fieldMappings.album_sort),
+       www_audio_file: getValueFromResult(fieldMappings.www_audio_file)
+     }));
+   }
 
   const handleMetadataChange = (field, value) => {
     setMetadata(prev => ({
@@ -266,107 +348,91 @@ function App() {
     setTemplateHelperOpen(false)
   }
 
-  // Generate sample preview for template helper
-  const generateSampleFilename = (template) => {
-    const sampleMetadata = {
-      title: 'The Hobbit',
-      album: 'The Hobbit',
-      artist: 'J.R.R. Tolkien',
-      album_artist: 'J.R.R. Tolkien',
-      composer: 'J.R.R. Tolkien',
-      narrator: 'J.R.R. Tolkien',
-      year: '1937',
-      track: '1',
-      series: 'Middle Earth',
-      series_part: '1',
-      subtitle: '',
-      genre: 'Fantasy',
-      comment: '',
-      publisher: 'George Allen & Unwin',
-      copyright: '1937',
-      format: 'MP3',
-      language: 'English',
-      asin: 'B000FC3K1A'
-    };
-    
-    // Simple template replacement for preview
-    let result = template;
-    result = result.replace(/%title%/g, sampleMetadata.title || '');
-    result = result.replace(/%album%/g, sampleMetadata.album || '');
-    result = result.replace(/%artist%/g, sampleMetadata.artist || '');
-    result = result.replace(/%album_artist%/g, sampleMetadata.album_artist || '');
-    result = result.replace(/%composer%/g, sampleMetadata.composer || '');
-    result = result.replace(/%narrator%/g, sampleMetadata.narrator || '');
-    result = result.replace(/%year%/g, sampleMetadata.year || '');
-    result = result.replace(/%track%/g, sampleMetadata.track ? String(sampleMetadata.track).padStart(2, '0') : '');
-    result = result.replace(/%series%/g, sampleMetadata.series || '');
-    result = result.replace(/%series_part%/g, sampleMetadata.series_part || '');
-    result = result.replace(/%series-part%/g, sampleMetadata.series_part || '');
-    result = result.replace(/%series_full%/g, `${sampleMetadata.series || ''} ${sampleMetadata.series_part || ''}`.trim());
-    result = result.replace(/%subtitle%/g, sampleMetadata.subtitle || '');
-    result = result.replace(/%genre%/g, sampleMetadata.genre || '');
-    result = result.replace(/%comment%/g, sampleMetadata.comment || '');
-    result = result.replace(/%publisher%/g, sampleMetadata.publisher || '');
-    result = result.replace(/%copyright%/g, sampleMetadata.copyright || '');
-    result = result.replace(/%format%/g, sampleMetadata.format || '');
-    result = result.replace(/%language%/g, sampleMetadata.language || '');
-    result = result.replace(/%asin%/g, sampleMetadata.asin || '');
-    
-    // Clean up extra spaces
-    result = result.replace(/\s+/g, ' ').trim();
-    return result || '[empty]';
-  };
-  
-  const generateSampleFolderPath = (template) => {
-    const sampleMetadata = {
-      title: 'The Hobbit',
-      album: 'The Hobbit',
-      artist: 'J.R.R. Tolkien',
-      album_artist: 'J.R.R. Tolkien',
-      composer: 'J.R.R. Tolkien',
-      narrator: 'J.R.R. Tolkien',
-      year: '1937',
-      track: '1',
-      series: 'Middle Earth',
-      series_part: '1',
-      subtitle: '',
-      genre: 'Fantasy',
-      comment: '',
-      publisher: 'George Allen & Unwin',
-      copyright: '1937',
-      format: 'MP3',
-      language: 'English',
-      asin: 'B000FC3K1A'
-    };
-    
-    // Simple template replacement for preview
-    let result = template;
-    result = result.replace(/%title%/g, sampleMetadata.title || '');
-    result = result.replace(/%album%/g, sampleMetadata.album || '');
-    result = result.replace(/%artist%/g, sampleMetadata.artist || '');
-    result = result.replace(/%album_artist%/g, sampleMetadata.album_artist || '');
-    result = result.replace(/%composer%/g, sampleMetadata.composer || '');
-    result = result.replace(/%narrator%/g, sampleMetadata.narrator || '');
-    result = result.replace(/%year%/g, sampleMetadata.year || '');
-    result = result.replace(/%track%/g, sampleMetadata.track ? String(sampleMetadata.track).padStart(2, '0') : '');
-    result = result.replace(/%series%/g, sampleMetadata.series || '');
-    result = result.replace(/%series_part%/g, sampleMetadata.series_part || '');
-    result = result.replace(/%series-part%/g, sampleMetadata.series_part || '');
-    result = result.replace(/%series_full%/g, `${sampleMetadata.series || ''} ${sampleMetadata.series_part || ''}`.trim());
-    result = result.replace(/%subtitle%/g, sampleMetadata.subtitle || '');
-    result = result.replace(/%genre%/g, sampleMetadata.genre || '');
-    result = result.replace(/%comment%/g, sampleMetadata.comment || '');
-    result = result.replace(/%publisher%/g, sampleMetadata.publisher || '');
-    result = result.replace(/%copyright%/g, sampleMetadata.copyright || '');
-    result = result.replace(/%format%/g, sampleMetadata.format || '');
-    result = result.replace(/%language%/g, sampleMetadata.language || '');
-    result = result.replace(/%asin%/g, sampleMetadata.asin || '');
-    
-    // Clean up extra spaces and slashes
-    result = result.replace(/\s+/g, ' ').trim();
-    result = result.replace(/\/\/+/g, '/');
-    return result || '[empty]';
-  };
+   // Shared sample metadata for template previews
+   const getSampleMetadata = () => ({
+     title: 'The Hobbit',
+     album: 'The Hobbit',
+     artist: 'J.R.R. Tolkien',
+     album_artist: 'J.R.R. Tolkien',
+     composer: 'J.R.R. Tolkien',
+     narrator: 'J.R.R. Tolkien',
+     year: '1937',
+     track: '1',
+     series: 'Middle Earth',
+     series_part: '1',
+     subtitle: '',
+     genre: 'Fantasy',
+     comment: '',
+     publisher: 'George Allen & Unwin',
+     copyright: '1937',
+     format: 'MP3',
+     language: 'English',
+     asin: 'B000FC3K1A'
+   });
+   
+   // Generate sample preview for template helper
+   const generateSampleFilename = (template) => {
+     const sampleMetadata = getSampleMetadata();
+     
+     // Simple template replacement for preview
+     let result = template;
+     result = result.replace(/%title%/g, sampleMetadata.title || '');
+     result = result.replace(/%album%/g, sampleMetadata.album || '');
+     result = result.replace(/%artist%/g, sampleMetadata.artist || '');
+     result = result.replace(/%album_artist%/g, sampleMetadata.album_artist || '');
+     result = result.replace(/%composer%/g, sampleMetadata.composer || '');
+     result = result.replace(/%narrator%/g, sampleMetadata.narrator || '');
+     result = result.replace(/%year%/g, sampleMetadata.year || '');
+     result = result.replace(/%track%/g, sampleMetadata.track ? String(sampleMetadata.track).padStart(2, '0') : '');
+     result = result.replace(/%series%/g, sampleMetadata.series || '');
+     result = result.replace(/%series_part%/g, sampleMetadata.series_part || '');
+     result = result.replace(/%series-part%/g, sampleMetadata.series_part || '');
+     result = result.replace(/%series_full%/g, `${sampleMetadata.series || ''} ${sampleMetadata.series_part || ''}`.trim());
+     result = result.replace(/%subtitle%/g, sampleMetadata.subtitle || '');
+     result = result.replace(/%genre%/g, sampleMetadata.genre || '');
+     result = result.replace(/%comment%/g, sampleMetadata.comment || '');
+     result = result.replace(/%publisher%/g, sampleMetadata.publisher || '');
+     result = result.replace(/%copyright%/g, sampleMetadata.copyright || '');
+     result = result.replace(/%format%/g, sampleMetadata.format || '');
+     result = result.replace(/%language%/g, sampleMetadata.language || '');
+     result = result.replace(/%asin%/g, sampleMetadata.asin || '');
+     
+     // Clean up extra spaces
+     result = result.replace(/\s+/g, ' ').trim();
+     return result || '[empty]';
+   };
+   
+   const generateSampleFolderPath = (template) => {
+     const sampleMetadata = getSampleMetadata();
+     
+     // Simple template replacement for preview
+     let result = template;
+     result = result.replace(/%title%/g, sampleMetadata.title || '');
+     result = result.replace(/%album%/g, sampleMetadata.album || '');
+     result = result.replace(/%artist%/g, sampleMetadata.artist || '');
+     result = result.replace(/%album_artist%/g, sampleMetadata.album_artist || '');
+     result = result.replace(/%composer%/g, sampleMetadata.composer || '');
+     result = result.replace(/%narrator%/g, sampleMetadata.narrator || '');
+     result = result.replace(/%year%/g, sampleMetadata.year || '');
+     result = result.replace(/%track%/g, sampleMetadata.track ? String(sampleMetadata.track).padStart(2, '0') : '');
+     result = result.replace(/%series%/g, sampleMetadata.series || '');
+     result = result.replace(/%series_part%/g, sampleMetadata.series_part || '');
+     result = result.replace(/%series-part%/g, sampleMetadata.series_part || '');
+     result = result.replace(/%series_full%/g, `${sampleMetadata.series || ''} ${sampleMetadata.series_part || ''}`.trim());
+     result = result.replace(/%subtitle%/g, sampleMetadata.subtitle || '');
+     result = result.replace(/%genre%/g, sampleMetadata.genre || '');
+     result = result.replace(/%comment%/g, sampleMetadata.comment || '');
+     result = result.replace(/%publisher%/g, sampleMetadata.publisher || '');
+     result = result.replace(/%copyright%/g, sampleMetadata.copyright || '');
+     result = result.replace(/%format%/g, sampleMetadata.format || '');
+     result = result.replace(/%language%/g, sampleMetadata.language || '');
+     result = result.replace(/%asin%/g, sampleMetadata.asin || '');
+     
+     // Clean up extra spaces and slashes
+     result = result.replace(/\s+/g, ' ').trim();
+     result = result.replace(/\/\/+/g, '/');
+     return result || '[empty]';
+   };
 
   return (
     <div className="app">
@@ -550,16 +616,22 @@ function App() {
                   {searchResults.length === 0 && searchQuery && (
                     <p className="no-results">No results found. Try a different search term.</p>
                   )}
-                  {searchResults.map((result, index) => (
-                    <div key={index} className="search-result" onClick={() => handleApplyMetadata(result)}>
-                      {result.cover && <img src={result.cover} alt="cover" className="result-cover" />}
-                      <div className="result-info">
-                        <h3>{result.title}</h3>
-                        {result.authors?.length > 0 && <p>By: {result.authors.join(', ')}</p>}
-                        {result.year && <p>Year: {result.year}</p>}
+                  {searchResults.map((result, index) => {
+                    const match = calculateMatch(metadata, result)
+                    return (
+                      <div key={index} className="search-result" onClick={() => handleApplyMetadata(result)}>
+                        {result.cover && <img src={result.cover} alt="cover" className="result-cover" />}
+                        <div className="result-info">
+                          <h3>{result.title}</h3>
+                          {result.authors?.length > 0 && <p>By: {result.authors.join(', ')}</p>}
+                          {result.year && <p>Year: {result.year}</p>}
+                        </div>
+                        <div className="result-match" style={{ color: getMatchColor(match) }}>
+                          {match}%
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
