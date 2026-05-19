@@ -29,6 +29,27 @@ A web-based audiobook management tool similar to Filebot for organizing and tagg
   - `{{default:%title%:Unknown}}` - Provide default value if empty
 - **Save & Apply**: Save template and persist config in one click
 
+### UI Workflow
+
+The app is designed for efficient workflow:
+
+1. **Select a file** from the file list on the left
+2. **Search for metadata** using the search box (searches Audible, Google Books, Open Library)
+3. **Select a result** - metadata auto-fills AND preview auto-generates simultaneously
+4. **Edit as needed** - any field changes trigger instant preview update
+5. **Apply Changes** - green button at top of metadata section
+6. **Template editing** - click the ⚙ cog icon next to "File Name" or "File Location" to edit templates
+
+### Template Editing
+
+Templates are now edited via the ⚙ icons next to File Name and File Location in the metadata table, not in the config sidebar. This keeps templates context-aware and easy to access while working with a specific file.
+
+### Change Highlighting
+
+When viewing metadata, fields that differ from the original file are highlighted:
+- **Bold red text** in input fields indicates the value has been changed from the original
+- This applies when: selecting a search result, manually editing a field, or any field differs from what's on the file
+
 ### Path Sanitization
 Automatically removes or replaces invalid characters for cross-platform compatibility:
 - Windows: `< > : " / \ | ? *`
