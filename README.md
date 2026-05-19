@@ -1,178 +1,247 @@
 # Audiobook Manager
 
-A web-based audiobook management tool similar to Filebot for movies and TV shows. This application helps you organize, rename, and tag your audiobook collection with metadata from Audible and Google Books.
+A web-based audiobook management tool similar to Filebot for organizing and tagging audiobook collections with metadata from Audible and other sources.
 
 ## Features
 
-- **Watch Folder**: Monitor a folder for new audiobook files with folder browser dialog
-- **Metadata Lookup**: Search and fetch metadata from Google Books
-- **Tag Editing**: Edit ID3 tags for MP3, M4A, M4B, FLAC, and other formats
-- **Customizable Templates**: Flexible filename and folder path templates
-- **Batch Processing**: Process multiple files at once
-- **Preview Changes**: See what changes will be made before applying
+### Core Functionality
+- **Watch Folder Monitoring**: Automatically detect and process new audiobook files
+- **Metadata Search**: Search and fetch metadata from Audible, Google Books, and Open Library
+- **Smart Matching**: Automatic match percentage calculation with auto-preview for high-confidence matches (80%+)
+- **Tag Editing**: Edit ID3 tags for MP3, M4A, M4B, FLAC, and other audio formats
+- **Customizable Templates**: Flexible filename and folder path templates with advanced functions
+- **Batch Processing**: Process multiple files efficiently
+- **Live Preview**: See changes before applying them
 - **Folder Browser**: Native folder selection dialog for easy path configuration
+- **Config Persistence**: Settings automatically save and persist across sessions
+
+### Template Helper Modal
+- **Drag & Drop**: Drag tags directly into template fields
+- **Click to Insert**: Click any tag or function to insert at cursor position
+- **Smart Functions**:
+  - `if_field` - Show content only if field exists
+  - `if_field_else` - Conditional if/else logic
+  - `pad_left` - Zero-pad numbers (e.g., track 1 → "01")
+  - `uppercase` / `lowercase` - Case conversion
+  - `default` - Provide default values for empty fields
+  - `replace` - Replace text in field values
+- **Live Preview**: See real-time preview with sample books (series and standalone)
+- **Sample Books**: Test templates with provided examples
+
+### Path Sanitization
+Automatically removes or replaces invalid characters for cross-platform compatibility:
+- Windows: `< > : " / \ | ? *`
+- macOS: `:`
+- Linux: `/`
+
+## Installation
+
+### Docker (Recommended)
+
+```bash
+# Build and run
+docker compose up --build -d
+
+# View logs
+docker logs audiobook-manager
+
+# Stop
+docker compose down
+```
+
+The application will be available at `http://localhost:8080`
+
+### Manual Installation
+
+#### Backend
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+#### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Usage
+
+1. **Configure Folders**:
+   - Click "Browse..." next to Watch Folder to select your audiobook source
+   - Click "Browse..." next to Output Folder for organized files destination
+
+2. **Select a File**: Choose an audiobook from the file list
+
+3. **Search Metadata**: 
+   - Search automatically triggers when you select a file
+   - Match percentage shows on each result (green = 80%+, orange = 50-79%, red = <50%)
+   - High matches (80%+) automatically preview
+
+4. **Edit Metadata**: Review and modify metadata as needed
+
+5. **Customize Templates**:
+   - Click "Tags" button next to Filename or Folder Template
+   - Use drag-and-drop or click to insert tags
+   - Add functions for advanced templating
+   - Preview with sample books
+   - Click "OK" to save (auto-saves config)
+
+6. **Preview Changes**: Click "Preview Changes" to see new filename and location
+
+7. **Apply**: Click "Apply Changes" to update tags and move the file
+
+## Template Tags
+
+| Tag | Description | Example |
+|-----|-------------|---------|
+| `%title%` | Book title | The Hobbit |
+| `%album%` | Album name (same as title) | The Hobbit |
+| `%artist%` | Author/Artist | J.R.R. Tolkien |
+| `%albumartist%` | Album artist | J.R.R. Tolkien |
+| `%composer%` | Composer/Narrator | Rob Inglis |
+| `%narrator%` | Narrator | Rob Inglis |
+| `%year%` | Publication year | 1937 |
+| `%track%` | Track number | 01 |
+| `%series%` | Series name | Middle Earth |
+| `%series_part%` | Series part number | 1 |
+| `%series-part%` | Series part (alternate) | 1 |
+| `%series_full%` | Full series with part | Middle Earth 1 |
+| `%subtitle%` | Subtitle | There and Back Again |
+| `%genre%` | Genre | Fantasy |
+| `%comment%` | Comment | Unabridged |
+| `%publisher%` | Publisher | George Allen & Unwin |
+| `%copyright%` | Copyright | 1937 |
+| `%format%` | File format | MP3 |
+| `%language%` | Language | English |
+| `%asin%` | ASIN | B000FC3K1A |
+
+## Template Functions
+
+### Conditional
+- `{{if_field:fieldname:value}}` - Show value if field exists
+- `{{if_field:fieldname:yes:no}}` - If/else logic
+
+### Formatting
+- `{{pad_left:fieldname:2}}` - Zero-pad to width (1 → "01")
+- `{{uppercase:fieldname}}` - Convert to uppercase
+- `{{lowercase:fieldname}}` - Convert to lowercase
+- `{{default:fieldname:Default}}` - Use default if empty
+- `{{replace:fieldname:old:new}}` - Replace text
+
+## Filename Templates
+
+**Example 1**: `%title% (%year%)`
+- Result: `The Hobbit (1937)`
+
+**Example 2**: `%albumartist% - %album% (%year%)`
+- Result: `J.R.R. Tolkien - The Hobbit (1937)`
+
+**Example 3**: `%title%%if_field:%series%: [%series% %series_part%]%.%extension%`
+- With series: `The Hobbit [Middle Earth 1].m4b`
+- Without series: `1984.m4b`
+
+## Folder Templates
+
+**Example 1**: `%albumartist%/%series%/%year% - %album%`
+- Result: `J.R.R. Tolkien/Middle Earth/1937 - The Hobbit/`
+
+**Example 2**: `%albumartist%/%series%{{if_field:%series%:/%series% %series_part%}}`
+- With series: `J.R.R. Tolkien/Middle Earth/Middle Earth 1/`
+- Without series: `George Orwell/1984/`
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/config` | GET | Get configuration |
+| `/api/config` | POST | Update configuration |
+| `/api/files` | GET | List files in watch folder |
+| `/api/files/{id}/metadata` | GET | Get file metadata |
+| `/api/search` | POST | Search for book metadata |
+| `/api/preview` | POST | Preview changes |
+| `/api/apply` | POST | Apply metadata changes |
+| `/api/watch/status` | GET | Get watch status |
+| `/api/watch/start` | POST | Start watching folder |
+| `/api/watch/stop` | POST | Stop watching folder |
+
+## Supported Formats
+
+- MP3
+- M4A / M4B (Audible)
+- FLAC
+- OGG
+- WAV
+- WMA
+- AAC
 
 ## Project Structure
 
 ```
 audiobook-manager/
 ├── backend/
-│   ├── main.py              # FastAPI application
-│   ├── models.py            # Pydantic models
+│   ├── main.py                 # FastAPI application
+│   ├── models.py               # Pydantic models
 │   ├── services/
-│   │   ├── metadata_service.py  # Read/write audio metadata
-│   │   ├── file_service.py      # File operations
-│   │   ├── watch_service.py     # Folder watching
-│   │   └── api_service.py       # External API calls
+│   │   ├── metadata_service.py # Read/write audio metadata
+│   │   ├── file_service.py     # File operations & templates
+│   │   ├── watch_service.py    # Folder watching
+│   │   └── api_service.py      # External API calls
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx              # Main React component
-│   │   ├── App.css              # Styles
+│   │   ├── App.jsx             # Main React component
+│   │   ├── App.css             # Styles
 │   │   └── components/
-│   │       ├── FolderBrowser.jsx    # Folder selection dialog
-│   │       └── FolderBrowser.css    # Folder browser styles
 │   └── package.json
-├── README.md
-└── start.sh                   # Startup script
+├── docker-compose.yml
+├── docker-compose.single.yml
+├── Dockerfile
+└── README.md
 ```
 
-## Installation
+## Configuration
 
-### Backend
+Configuration is stored in `/config/config.json` and persists across deployments:
 
-1. Navigate to the backend directory:
-```bash
-cd audiobook-manager/backend
+```json
+{
+  "watch_folder": "/mnt/watch",
+  "output_folder": "/mnt/output",
+  "filename_template": "%title% (%year%)",
+  "folder_template": "%albumartist%/%album%"
+}
 ```
 
-2. Create a virtual environment:
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+## Troubleshooting
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+### Files not showing in watch folder
+- Ensure the watch folder path is correct and accessible
+- Check file permissions
+- Verify file extensions are supported
 
-4. Run the backend:
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+### Template not working
+- Check for invalid characters (automatically sanitized)
+- Verify tag names are correct (case-sensitive)
+- Test with sample books in template helper
 
-The API will be available at `http://localhost:8000`
-
-### Frontend
-
-1. Navigate to the frontend directory:
-```bash
-cd audiobook-manager/frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Run the development server:
-```bash
-npm run dev
-```
-
-The frontend will be available at `http://localhost:5173`
-
-## Usage
-
-1. **Configure Folders**: 
-   - Click "Browse..." next to Watch Folder to select where your audiobooks are stored
-   - Click "Browse..." next to Output Folder to select where organized files should go
-   
-2. **Select a File**: Choose an audiobook from the file list
-
-3. **Search Metadata**: Search for the book title/author to fetch metadata from Google Books
-
-4. **Edit Metadata**: Review and modify the metadata as needed using the Audible mapping
-
-5. **Preview**: Click "Preview Changes" to see the new filename and location
-
-6. **Apply**: Click "Apply Changes" to update tags and move the file
-
-## Filename Templates
-
-Use these placeholders in your templates:
-
-- `%album%` - Book title
-- `%year%` - Publication year
-- `%track%` - Track number
-- `%title%` - Track title
-- `%artist%` - Author/Narrator
-- `%albumartist%` - Album artist
-- `%series%` - Series name
-- `%series-part%` - Series part number
-
-### Example Templates
-
-**Filename**: `%album% (%year%) - Pt%track%`
-- Result: `Harry Potter and the Philosopher's Stone (1997) - Pt01.mp3`
-
-**Folder Path**: `%albumartist%/%series%/%year% - %album%`
-- Result: `J.K. Rowling/Harry Potter/1997 - Harry Potter and the Philosopher's Stone/`
-
-## Audible Metadata Mapping
-
-| MP3Tag Tag     | Audible.com Value    |
-|----------------|----------------------|
-| ALBUM          | Title                |
-| SUBTITLE       | Subtitle             |
-| ARTIST         | Author               |
-| ALBUMARTIST    | Author               |
-| COMPOSER       | Narrator             |
-| YEAR           | Original Year        |
-| COMMENT        | Publisher's Summary  |
-| SERIES         | Series               |
-| SERIES-PART    | Series Book #        |
-| ALBUMSORT      | %series% %series-part% - %album% |
-| PUBLISHER      | Publisher            |
-| COPYRIGHT      | Copyright holder     |
-| RATING WMP     | Audible Rating       |
-| COVER          | Cover Art            |
-
-## API Endpoints
-
-- `GET /api/config` - Get configuration
-- `POST /api/config` - Update configuration
-- `GET /api/files` - List files in watch folder
-- `GET /api/files/{file_id}/metadata` - Get file metadata
-- `GET /api/folders` - Browse folders (for folder selection dialog)
-- `POST /api/search` - Search for book metadata
-- `POST /api/preview` - Preview changes
-- `POST /api/apply` - Apply metadata changes
-- `GET /api/watch/status` - Get watch status
-- `POST /api/watch/start` - Start watching folder
-- `POST /api/watch/stop` - Stop watching folder
-
-## Supported Formats
-
-- MP3
-- M4A/M4B (Audible)
-- FLAC
-- OGG
-- WAV
-- WMA
-
-## Quick Start
-
-Use the provided startup script to run both backend and frontend:
-
-```bash
-cd audiobook-manager
-./start.sh
-```
-
-Then open http://localhost:5173 in your browser.
+### Slow performance
+- Large files may take time to process metadata
+- Network shares (SMB) may be slower
+- Check nginx timeout settings (default: 300s)
 
 ## License
 
 MIT
+
+## Credits
+
+Built with:
+- **Backend**: FastAPI, Python
+- **Frontend**: React, Vite
+- **Metadata**: Mutagen, Audible API, Google Books API
+- **Container**: Docker, nginx
