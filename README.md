@@ -56,6 +56,13 @@ Automatically removes or replaces invalid characters for cross-platform compatib
 - macOS: `:`
 - Linux: `/`
 
+### Validation & Error Handling
+The app includes robust validation and error handling:
+- **Required field validation**: Title must be filled before applying changes
+- **Conflict detection**: Prevents overwriting existing files (returns error if target already exists)
+- **Path traversal protection**: Blocks attempts to escape the output directory
+- **User-friendly errors**: Errors display in red below the Apply button instead of alert dialogs
+
 ## Installation
 
 ### Docker (Recommended)
