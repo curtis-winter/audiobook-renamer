@@ -141,6 +141,31 @@ header h1 {
   margin-bottom: 2rem;
 }
 
+.metadata-editor .template-btn {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0 0.25rem;
+  vertical-align: middle;
+}
+
+.metadata-editor .template-btn:hover {
+  color: #646cff;
+}
+
+.metadata-editor td.has-change {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.metadata-editor input.changed-input {
+  color: #ff6b6b;
+  font-weight: bold;
+  background: rgba(255, 107, 107, 0.1);
+}
+
 .metadata-table {
   width: 100%;
   border-collapse: collapse;
@@ -337,11 +362,18 @@ header h1 {
   background: #535bf2;
 }
 
-.actions button.apply {
+.actions button.apply, h2 button.apply {
   background: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: auto;
 }
 
-.actions button.apply:hover {
+.actions button.apply:hover, h2 button.apply:hover {
   background: #45a049;
 }
 

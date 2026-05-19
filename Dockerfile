@@ -30,25 +30,27 @@ WORKDIR /app
 # Copy built frontend
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Create nginx config
+# Create nginx config with increased timeouts
 RUN echo 'events { worker_connections 1024; } \
 http { \
-    include /etc/nginx/mime.types; \
-    default_type application/octet-stream; \
-    server { \
-        listen 80; \
-        server_name localhost; \
-        root /app/frontend/dist; \
-        index index.html; \
-        location / { \
-            try_files $uri $uri/ /index.html; \
-        } \
-        location /api { \
-            proxy_pass http://localhost:8000; \
-            proxy_set_header Host $host; \
-            proxy_set_header X-Real-IP $remote_addr; \
-        } \
+  include /etc/nginx/mime.types; \
+  default_type application/octet-stream; \
+  server { \
+    listen 80; \
+    server_name localhost; \
+    root /app/frontend/dist; \
+    index index.html; \
+    location / { \
+      try_files $uri $uri/ /index.html; \
     } \
+    location /api { \
+      proxy_pass http://localhost:8000; \
+      proxy_set_header Host $host; \
+      proxy_set_header X-Real-IP $remote_addr; \
+      proxy_read_timeout 300s; \
+      proxy_send_timeout 300s; \
+    } \
+  } \
 }' > /etc/nginx/nginx.conf
 
 # Expose port
