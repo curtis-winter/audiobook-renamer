@@ -16,17 +16,18 @@ A web-based audiobook management tool similar to Filebot for organizing and tagg
 - **Config Persistence**: Settings automatically save and persist across sessions
 
 ### Template Helper Modal
-- **Drag & Drop**: Drag tags directly into template fields
-- **Click to Insert**: Click any tag or function to insert at cursor position
+- **Click to Insert**: Click any tag or function to insert at cursor position in the template
+- **Live Preview**: See real-time preview with two sample books:
+  - **Standalone Book**: "1984" by George Orwell (no series)
+  - **Book in Series**: "The Hobbit" by J.R.R. Tolkien (Middle Earth series)
+- **Sample Book Selector**: Switch between sample books to see how templates render different scenarios
 - **Smart Functions**:
-  - `if_field` - Show content only if field exists
-  - `if_field_else` - Conditional if/else logic
-  - `pad_left` - Zero-pad numbers (e.g., track 1 → "01")
-  - `uppercase` / `lowercase` - Case conversion
-  - `default` - Provide default values for empty fields
-  - `replace` - Replace text in field values
-- **Live Preview**: See real-time preview with sample books (series and standalone)
-- **Sample Books**: Test templates with provided examples
+  - `{{if_field:%series%:[%series% %series_part%]}}` - Show content only if field exists
+  - `{{pad_left:%series_part%:2}}` - Zero-pad numbers (e.g., 1 → "01")
+  - `{{uppercase:%title%}}` - Convert to uppercase
+  - `{{lowercase:%title%}}` - Convert to lowercase
+  - `{{default:%title%:Unknown}}` - Provide default value if empty
+- **Save & Apply**: Save template and persist config in one click
 
 ### Path Sanitization
 Automatically removes or replaces invalid characters for cross-platform compatibility:

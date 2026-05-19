@@ -543,14 +543,20 @@ button {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+}
+
+.template-helper-modal .modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
 }
 
 .template-helper-modal.open {
@@ -558,13 +564,54 @@ button {
   pointer-events: all;
 }
 
+.template-helper-modal .template-editor {
+  margin-bottom: 1rem;
+}
+
+.template-helper-modal .template-editor label,
+.template-helper-modal .template-sample-select label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.template-helper-modal .template-editor textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.template-helper-modal .template-sample-select {
+  margin-bottom: 1rem;
+}
+
+.template-helper-modal .template-sample-select select {
+  padding: 0.5rem;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  min-width: 200px;
+}
+
 .template-helper-modal .modal-content {
+  position: relative;
+  z-index: 1001;
   background: #242424;
   border-radius: 8px;
   width: 90%;
   max-width: 800px;
+  min-height: 400px;
   max-height: 90vh;
-  overflow: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .template-helper-modal h2 {
@@ -578,10 +625,62 @@ button {
 .template-helper-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 1.5rem;
   padding: 1.5rem;
   height: calc(100vh - 200px);
   overflow-y: auto;
+}
+
+.template-helper-modal .template-editor-full {
+  grid-column: 1 / -1;
+}
+
+.template-helper-modal .template-tags,
+.template-helper-modal .template-functions {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.template-helper-modal .template-preview {
+  grid-column: 1 / -1;
+}
+
+.template-helper-modal .template-editor-full label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.template-helper-modal .template-editor-full textarea {
+  width: 100%;
+  padding: 0.75rem;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.template-helper-modal .preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.template-helper-modal .preview-header h4 {
+  margin: 0;
+}
+
+.template-helper-modal .preview-header select {
+  padding: 0.5rem;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
 }
 
 .tags-section {
@@ -671,6 +770,22 @@ button {
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
   word-break: break-all;
+}
+
+.template-helper-modal .preview-box {
+  background: #1a1a1a;
+  padding: 1rem;
+  border-radius: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.template-helper-modal .preview-box pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.85rem;
+  color: #4ade80;
 }
 
 .template-helper-modal .modal-actions {

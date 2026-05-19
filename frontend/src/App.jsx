@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import FolderBrowser from './components/FolderBrowser'
 import './App.css'
@@ -45,6 +45,98 @@ const getMatchColor = (match) => {
   return 'red'
 }
 
+const processTemplateFunctions = (template, metadata) => {
+  let result = template
+
+  // if_field: {{if_field:%series%:[%series% %series_part%]}}
+  result = result.replace(/\{\{if_field:([^:]+):([^}]+)\}\}/g, (match, field, value) => {
+    const fieldName = field.replace(/%/g, '')
+    const fieldValue = metadata[fieldName] || ''
+    if (!fieldValue) return ''
+    // Replace {field} placeholder with actual value
+    return value.replace(/\{field\}/g, fieldValue)
+  })
+
+  // pad_left: {{pad_left:%series_part%:2}}
+  result = result.replace(/\{\{pad_left:([^:]+):(\d+)\}\}/g, (match, field, width) => {
+    const fieldName = field.replace(/%/g, '')
+    const fieldValue = metadata[fieldName] || ''
+    return fieldValue.toString().padStart(parseInt(width), '0')
+  })
+
+  // uppercase: {{uppercase:%title%}}
+  result = result.replace(/\{\{uppercase:([^}]+)\}\}/g, (match, field) => {
+    const fieldName = field.replace(/%/g, '')
+    const fieldValue = metadata[fieldName] || ''
+    return fieldValue.toString().toUpperCase()
+  })
+
+  // lowercase: {{lowercase:%title%}}
+  result = result.replace(/\{\{lowercase:([^}]+)\}\}/g, (match, field) => {
+    const fieldName = field.replace(/%/g, '')
+    const fieldValue = metadata[fieldName] || ''
+    return fieldValue.toString().toLowerCase()
+  })
+
+  // default: {{default:%title%:Unknown}}
+  result = result.replace(/\{\{default:([^:]+):([^}]+)\}\}/g, (match, field, defaultVal) => {
+    const fieldName = field.replace(/%/g, '')
+    const fieldValue = metadata[fieldName] || ''
+    return fieldValue || defaultVal
+  })
+
+  return result
+}
+
+const SAMPLE_BOOKS = {
+  standalone: {
+    name: 'Standalone Book',
+    data: {
+      title: '1984',
+      album: '1984',
+      artist: 'George Orwell',
+      album_artist: 'George Orwell',
+      composer: 'Simon Prebble',
+      narrator: 'Simon Prebble',
+      year: '1949',
+      track: '1',
+      series: '',
+      series_part: '',
+      subtitle: '',
+      genre: 'Fiction',
+      comment: 'Unabridged',
+      publisher: 'Penguin Books',
+      copyright: '1949',
+      format: 'MP3',
+      language: 'English',
+      asin: ''
+    }
+  },
+  series: {
+    name: 'Book in Series',
+    data: {
+      title: 'The Hobbit',
+      album: 'The Hobbit',
+      artist: 'J.R.R. Tolkien',
+      album_artist: 'J.R.R. Tolkien',
+      composer: 'Rob Inglis',
+      narrator: 'Rob Inglis',
+      year: '1937',
+      track: '1',
+      series: 'Middle Earth',
+      series_part: '1',
+      subtitle: 'There and Back Again',
+      genre: 'Fantasy',
+      comment: 'Unabridged',
+      publisher: 'George Allen & Unwin',
+      copyright: '1937',
+      format: 'MP3',
+      language: 'English',
+      asin: 'B000FC3K1A'
+    }
+  }
+}
+
 function App() {
   const [config, setConfig] = useState({
     watchFolder: './watch',
@@ -66,6 +158,10 @@ function App() {
   const [hasPreviewed, setHasPreviewed] = useState(false)
   const [templateHelperOpen, setTemplateHelperOpen] = useState(false)
   const [editingTemplateType, setEditingTemplateType] = useState('filename')
+  const [helperSampleBook, setHelperSampleBook] = useState('series')
+  const [helperTemplate, setHelperTemplate] = useState('')
+  const [cursorPosition, setCursorPosition] = useState(0)
+  const textareaRef = useRef(null)
 
   useEffect(() => {
     loadConfig()
@@ -330,20 +426,32 @@ function App() {
 
   const openTemplateHelper = (type) => {
     setEditingTemplateType(type)
+    setHelperTemplate(type === 'filename' ? config.filenameTemplate : config.folderTemplate)
     setTemplateHelperOpen(true)
   }
 
   const insertTag = (tag) => {
-    if (editingTemplateType === 'filename') {
-      setConfig(prev => ({
-        ...prev,
-        filenameTemplate: prev.filenameTemplate + tag
-      }))
+    const textarea = textareaRef.current
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const before = helperTemplate.substring(0, start)
+      const after = helperTemplate.substring(end)
+      setHelperTemplate(before + tag + after)
+      setTimeout(() => {
+        textarea.focus()
+        textarea.setSelectionRange(start + tag.length, start + tag.length)
+      }, 0)
     } else {
-      setConfig(prev => ({
-        ...prev,
-        folderTemplate: prev.folderTemplate + tag
-      }))
+      setHelperTemplate(prev => prev + tag)
+    }
+  }
+
+  const handleSaveHelperTemplate = () => {
+    if (editingTemplateType === 'filename') {
+      setConfig(prev => ({ ...prev, filenameTemplate: helperTemplate }))
+    } else {
+      setConfig(prev => ({ ...prev, folderTemplate: helperTemplate }))
     }
     setTemplateHelperOpen(false)
   }
@@ -689,6 +797,64 @@ function App() {
               <button onClick={handleDeleteAllEmptyFolders} className="btn-primary">
                 Delete Folders
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template Helper Modal */}
+      {templateHelperOpen && (
+        <div className="template-helper-modal open">
+          <div className="modal-overlay" onClick={() => setTemplateHelperOpen(false)}></div>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>Template Helper - {editingTemplateType === 'filename' ? 'Filename' : 'Folder'} Template</h2>
+            <div className="template-helper-content">
+              <div className="template-editor-full">
+                <label>Template:</label>
+                <textarea
+                  ref={textareaRef}
+                  value={helperTemplate}
+                  onChange={(e) => {
+                    setHelperTemplate(e.target.value)
+                    setCursorPosition(e.target.selectionStart)
+                  }}
+                  onClick={(e) => setCursorPosition(e.target.selectionStart)}
+                  placeholder="Enter template..."
+                  rows={3}
+                />
+              </div>
+              <div className="template-tags">
+                <h4>Tags</h4>
+                <div className="tag-buttons">
+                  {['%title%', '%album%', '%artist%', '%albumartist%', '%narrator%', '%year%', '%series%', '%series_part%', '%genre%', '%language%', '%asin%', '%format%'].map(tag => (
+                    <button key={tag} className="tag-btn" onClick={() => insertTag(tag)}>{tag}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="template-functions">
+                <h4>Functions</h4>
+                <div className="tag-buttons">
+                  {['{{if_field:%series%: [%series% %series_part%]}}', '{{pad_left:%series_part%:2}}', '{{uppercase:%title%}}', '{{lowercase:%title%}}', '{{default:%title%:Unknown}}'].map(fn => (
+                    <button key={fn} className="tag-btn function" onClick={() => insertTag(fn)}>{fn}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="template-preview">
+                <div className="preview-header">
+                  <h4>Preview</h4>
+                  <select value={helperSampleBook} onChange={(e) => setHelperSampleBook(e.target.value)}>
+                    <option value="standalone">{SAMPLE_BOOKS.standalone.name}</option>
+                    <option value="series">{SAMPLE_BOOKS.series.name}</option>
+                  </select>
+                </div>
+                <div className="preview-box">
+                  <pre>{processTemplateFunctions(helperTemplate, SAMPLE_BOOKS[helperSampleBook].data).replace(/%(\w+)%/g, (m, k) => SAMPLE_BOOKS[helperSampleBook].data[k] || m)}</pre>
+                </div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setTemplateHelperOpen(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => { handleSaveHelperTemplate(); handleSaveConfig(); }} className="btn-primary">Save & Apply</button>
             </div>
           </div>
         </div>
