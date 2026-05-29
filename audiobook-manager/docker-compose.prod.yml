@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: audiobook-manager-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - /mnt/plex-media/To Be Sorted/audiobook:/app/watch
+      - /mnt/plex-media/To Be Sorted/audiobook/remapped:/app/output
+      - ./data/config:/config
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ALLOWED_ORIGINS=*
+      - CONFIG_PATH=/config/config.json
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: audiobook-manager-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

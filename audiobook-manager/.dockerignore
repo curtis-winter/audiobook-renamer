@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+venv/
+.venv/
+
+# Node
+node_modules/
+npm-debug.log
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data
+data/
+config.json
+
+# Backend
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Frontend
+*.log
+.env
+.env.local
