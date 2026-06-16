@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: audiobook-manager-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - /home/curtis/audiobook-data/watch:/app/watch
+      - /home/curtis/audiobook-data/output:/app/output
+      - /home/curtis/audiobook-data/config:/config
+      - /mnt/plex-media:/mnt
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: audiobook-manager-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  watch:
+  output:
+  config:
