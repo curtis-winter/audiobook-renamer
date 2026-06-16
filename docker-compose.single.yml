@@ -1,0 +1,16 @@
+services:
+  audiobook-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audiobook-manager
+    ports:
+      - "8080:80"
+    volumes:
+      - /mnt/plex-media/To Be Sorted/audiobook/Unmapped:/mnt/watch
+      - /mnt/plex-media/To Be Sorted/audiobook/remapped:/mnt/output
+      - ./config:/config
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AUDIBLE_AUTH_FILE=/config/auth.json
+    restart: unless-stopped

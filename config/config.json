@@ -1,0 +1,6 @@
+{
+  "watch_folder": "/mnt/watch",
+  "output_folder": "/mnt/output",
+  "filename_template": "%title%(%year%){{if_field:%series%:[%series% %series_part%]}}",
+  "folder_template": "%artist%/%series%/(%year%) %album%{{if_field:%series%:[%series% %series_part%]}}"
+}
