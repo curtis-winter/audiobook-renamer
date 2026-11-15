@@ -282,6 +282,9 @@ async def delete_folder(folder_path: str):
 def _safe_roots() -> list:
     """Return a list of absolute paths the folder browser is allowed to expose."""
     roots = []
+    # Always allow the general media mount point so users can browse
+    # and select any folder under /mnt/media as watch/output
+    roots.append("/mnt/media")
     for raw in (config.watch_folder, config.output_folder):
         if not raw:
             continue

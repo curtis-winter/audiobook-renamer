@@ -7,8 +7,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /mnt/plex-media/To Be Sorted/audiobook:/app/watch
-      - /mnt/plex-media/To Be Sorted/audiobook/remapped:/app/output
+      # General media mount - /mnt/plex-media on host is available as /mnt/media in container
+      - /mnt/plex-media:/mnt/media
       - ./data/config:/config
     environment:
       - PYTHONUNBUFFERED=1

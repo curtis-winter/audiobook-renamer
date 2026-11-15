@@ -5,15 +5,21 @@ services:
       dockerfile: Dockerfile
     container_name: audiobook-manager-backend
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
-      - /mnt/plex-media/To Be Sorted/audiobook:/app/watch
-      - /mnt/plex-media/To Be Sorted/audiobook/remapped:/app/output
-      - ./data/config:/config
+      # General media mount - /mnt/plex-media on host is available as /mnt/media in container
+      - /mnt/plex-media:/mnt/media
+      - audiobook-config:/config
     environment:
       - PYTHONUNBUFFERED=1
-      - ALLOWED_ORIGINS=http://localhost
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
       - CONFIG_PATH=/config/config.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
     networks:
       - app-network
@@ -24,12 +30,16 @@ services:
       dockerfile: Dockerfile.prod
     container_name: audiobook-manager-frontend
     ports:
-      - "80:80"
+      - "${APP_PORT:-80}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - app-network
+
+volumes:
+  audiobook-config:
 
 networks:
   app-network:

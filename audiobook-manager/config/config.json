@@ -1,6 +1,6 @@
 {
-  "watch_folder": "/mnt/watch",
-  "output_folder": "/mnt/output",
+  "watch_folder": "/mnt/plex-media/To Be Sorted/audiobook/Unmapped",
+  "output_folder": "/mnt/plex-media/To Be Sorted/audiobook/remapped",
   "filename_template": "%title%(%year%){{if_field:%series%:[%series% %series_part%]}}",
   "folder_template": "%artist%/%series%/(%year%) %album%{{if_field:%series%:[%series% %series_part%]}}"
 }

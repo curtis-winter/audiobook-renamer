@@ -27,7 +27,7 @@ npm-debug.log
 *.swp
 *.swo
 
-# Data
+# Data (mounted at runtime)
 data/
 config.json
 
@@ -40,3 +40,11 @@ htmlcov/
 *.log
 .env
 .env.local
+
+# Docker compose env files (configure on the server)
+.env.docker.example
+.dockerignore
+
+# Documentation (not needed in image)
+*.md
+LICENSE

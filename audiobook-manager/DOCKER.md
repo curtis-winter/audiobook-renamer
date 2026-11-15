@@ -55,9 +55,7 @@ docker-compose up --build
 
 ## Volume Mounts
 
-Data folders are mounted from `./data`:
-- `./data/watch` - Watch folder for new audiobooks
-- `./data/output` - Output folder for processed files
+The host directory `/mnt/plex-media` is mounted as `/mnt/media` inside the container. Use the app's Settings page to pick your watch and output folders from anywhere under `/mnt/media`.
 
 ## Environment Variables
 

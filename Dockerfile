@@ -3,7 +3,7 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
@@ -11,7 +11,7 @@ RUN npm run build
 FROM python:3.13-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libtag1-dev \
     nginx \
@@ -30,31 +30,18 @@ WORKDIR /app
 # Copy built frontend
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Create nginx config with increased timeouts
-RUN echo 'events { worker_connections 1024; } \
-http { \
-  include /etc/nginx/mime.types; \
-  default_type application/octet-stream; \
-  server { \
-    listen 80; \
-    server_name localhost; \
-    root /app/frontend/dist; \
-    index index.html; \
-    location / { \
-      try_files $uri $uri/ /index.html; \
-    } \
-    location /api { \
-      proxy_pass http://localhost:8000; \
-      proxy_set_header Host $host; \
-      proxy_set_header X-Real-IP $remote_addr; \
-      proxy_read_timeout 300s; \
-      proxy_send_timeout 300s; \
-    } \
-  } \
-}' > /etc/nginx/nginx.conf
+# Copy nginx config
+COPY nginx.docker.conf /etc/nginx/nginx.conf
+
+# Create necessary directories
+RUN mkdir -p /var/log/nginx /var/cache/nginx
 
 # Expose port
 EXPOSE 80
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
+    CMD curl -f http://localhost:80/api/config || exit 1
+
 # Start nginx and backend
-CMD sh -c "nginx & cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000"
+CMD sh -c "nginx && cd /app/backend && uvicorn main:app --host 0.0.0.0 --port 8000"

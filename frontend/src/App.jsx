@@ -139,9 +139,10 @@ function App() {
   const loadFiles = async () => {
     try {
       const response = await axios.get(`${API_URL}/files`)
-      setFiles(response.data)
+      setFiles(Array.isArray(response.data) ? response.data : [])
     } catch (error) {
       console.error('Error loading files:', error)
+      setFiles([])
     }
   }
 
@@ -163,6 +164,7 @@ function App() {
 
   // Filter files by selected subfolder
   const filteredFiles = useMemo(() => {
+    if (!Array.isArray(files)) return []
     if (!selectedSubfolder) return files
     const watchPath = config.watchFolder
     if (!watchPath) return files

@@ -9,10 +9,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /home/curtis/audiobook-data/watch:/app/watch
-      - /home/curtis/audiobook-data/output:/app/output
-      - /home/curtis/audiobook-data/config:/config
-      - /mnt/plex-media:/mnt
+      # General media mount - /mnt/plex-media on host is available as /mnt/media in container
+      - /mnt/plex-media:/mnt/media
+      - ${CONFIG_FOLDER:-./data/config}:/config
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

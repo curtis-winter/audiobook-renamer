@@ -53,8 +53,8 @@ class MetadataUpdate(BaseModel):
 class Config(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     
-    watch_folder: str = Field(default="/mnt/watch", alias="watchFolder")
-    output_folder: str = Field(default="/mnt/output", alias="outputFolder")
+    watch_folder: str = Field(default="/mnt/media/To Be Sorted/audiobook/Unmapped", alias="watchFolder")
+    output_folder: str = Field(default="/mnt/media/To Be Sorted/audiobook/remapped", alias="outputFolder")
     filename_template: str = Field(default="%albumartist% - %album% (%year%)", alias="filenameTemplate")
     folder_template: str = Field(default="%albumartist%/%series%/%year% - %album%", alias="folderTemplate")
     

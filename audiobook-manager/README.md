@@ -281,8 +281,8 @@ Configuration is stored in `/config/config.json` and persists across deployments
 
 ```json
 {
-  "watch_folder": "/mnt/watch",
-  "output_folder": "/mnt/output",
+  "watch_folder": "/mnt/plex-media/To Be Sorted/audiobook/Unmapped",
+  "output_folder": "/mnt/plex-media/To Be Sorted/audiobook/remapped",
   "filename_template": "%title% (%year%)",
   "folder_template": "%albumartist%/%album%"
 }
